@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.ffelipe.sistema_pedidos.dto.ProdutoDTO;
+import com.ffelipe.sistema_pedidos.mapper.ProdutoMapper;
 import com.ffelipe.sistema_pedidos.models.Produto;
 import com.ffelipe.sistema_pedidos.repository.ProdutoRepository;
 
@@ -20,34 +22,39 @@ public class ProdutoController {
 
     // Listar todos os produtos
     @GetMapping
-    public List<Produto> listarProdutos() {
-        return produtoRepository.findAll();
+    public List<ProdutoDTO> listarProdutos() {
+        return produtoRepository.findAll()
+                .stream()
+                .map(ProdutoMapper::toDTO)
+                .toList();
     }
 
     // Buscar produto por ID
     @GetMapping("/{id}")
-    public ResponseEntity<Produto> buscarProduto(@PathVariable Long id) {
+    public ResponseEntity<ProdutoDTO> buscarProduto(@PathVariable Long id) {
         Optional<Produto> produto = produtoRepository.findById(id);
-        return produto.map(ResponseEntity::ok)
+        return produto.map(p -> ResponseEntity.ok(ProdutoMapper.toDTO(p)))
                       .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
 
     // Criar um novo produto
     @PostMapping
-    public ResponseEntity<Produto> criarProduto(@RequestBody Produto produto) {
-        Produto novoProduto = produtoRepository.save(produto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(novoProduto);
+    public ResponseEntity<ProdutoDTO> criarProduto(@RequestBody ProdutoDTO dto) {
+        Produto novoProduto = produtoRepository.save(ProdutoMapper.toEntity(dto));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ProdutoMapper.toDTO(novoProduto));
     }
 
     // Atualizar um produto existente
     @PutMapping("/{id}")
-    public ResponseEntity<Produto> atualizarProduto(@PathVariable Long id, @RequestBody Produto produto) {
+    public ResponseEntity<ProdutoDTO> atualizarProduto(@PathVariable Long id, @RequestBody ProdutoDTO dto) {
         if (!produtoRepository.existsById(id)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-        produto.setId(id);
-        Produto produtoAtualizado = produtoRepository.save(produto);
-        return ResponseEntity.ok(produtoAtualizado);
+
+        Produto produto = ProdutoMapper.toEntity(dto);
+        produto.setId(id); // garante que atualiza o certo
+        Produto atualizado = produtoRepository.save(produto);
+        return ResponseEntity.ok(ProdutoMapper.toDTO(atualizado));
     }
 
     // Deletar um produto
@@ -60,4 +67,5 @@ public class ProdutoController {
         return ResponseEntity.noContent().build();
     }
 }
+
 

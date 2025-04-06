@@ -1,52 +1,54 @@
 package com.ffelipe.sistema_pedidos.controller;
 
 
-import com.ffelipe.sistema_pedidos.models.Pedido;
-import com.ffelipe.sistema_pedidos.repository.PedidoRepository;
+import com.ffelipe.sistema_pedidos.dto.PedidoDTO;
+
 import com.ffelipe.sistema_pedidos.service.PedidoService;
 
-import org.springframework.beans.factory.annotation.Autowired;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
-@RequestMapping("/pedidos")
+@RequestMapping("/api/pedidos")
 public class PedidoController {
 
+    private final PedidoService pedidoService;
 
-    @Autowired
-    private PedidoService pedidoService; 
-    private final PedidoRepository pedidoRepository;
-
-    public PedidoController(PedidoRepository pedidoRepository) {
-        this.pedidoRepository = pedidoRepository;
+    public PedidoController(PedidoService pedidoService) {
+        this.pedidoService = pedidoService;
     }
 
     @GetMapping
-    public List<Pedido> listarPedidos() {
-        return pedidoRepository.findAll();
+    public List<PedidoDTO> listarPedidos() {
+        return pedidoService.listarPedidos();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Pedido> buscarPedido(@PathVariable Long id) {
-        Optional<Pedido> pedido = pedidoRepository.findById(id);
-        return pedido.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<PedidoDTO> buscarPedido(@PathVariable Long id) {
+        return pedidoService.buscarPorId(id)
+            .map(ResponseEntity::ok)
+            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Pedido criarPedido(@RequestBody Pedido pedido) {
-        return pedidoService.criarPedido(pedido);
+    public ResponseEntity<PedidoDTO> criarPedido(@RequestBody PedidoDTO pedidoDTO) {
+        try {
+            PedidoDTO novoPedido = pedidoService.criarPedido(pedidoDTO);
+            return ResponseEntity.status(HttpStatus.CREATED).body(novoPedido);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletarPedido(@PathVariable Long id) {
-        if (!pedidoRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        pedidoRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        boolean deletado = pedidoService.deletar(id);
+        return deletado ? ResponseEntity.noContent().build() : ResponseEntity.notFound().build();
     }
 }
+
