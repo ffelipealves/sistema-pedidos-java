@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -17,6 +20,7 @@ public class ItemPedido {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "pedido_id", nullable = false)
+    @JsonBackReference
     private Pedido pedido;
 
     @ManyToOne(optional = false)
@@ -43,8 +47,7 @@ public class ItemPedido {
             throw new IllegalArgumentException("ItemPedido deve estar associado a um Pedido e a um Produto.");
         }
         this.valorUnitario = produto.getPreco();
-        this.subtotal = calcularSubtotal();
-        pedido.calcularValorTotal(); // Atualiza o valor do pedido
+        this.subtotal = calcularSubtotal(); // Já faz a multiplicação internamente
     }
 }
 
